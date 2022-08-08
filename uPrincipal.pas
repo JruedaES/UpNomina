@@ -133,7 +133,7 @@ var
 begin
   if sListaColumna.Count = 11 then
   begin
-    if I = 0 then
+    {if I = 0 then
     begin
       if (sListaColumna[0] <> 'COMNUM') or (sListaColumna[1] <> 'TIPCOMID') or
         (sListaColumna[2] <> 'COMCONS') or (sListaColumna[3] <> 'PLACUECOD') or
@@ -146,12 +146,24 @@ begin
           sLineBreak);
         ivalidador := ivalidador + 1;
       end;
-    end
+    end }
     // Validamos el contenido de cada columna del archivo
-    else
-    begin
+    //else
+    //begin
       // ShowMessage(sListaColumna.Text);
       // Validamos si COMNUM es de tipo numérico
+
+      //--------------------------------------------------------------
+      { if sListaColumna.Count = 9 then
+    begin
+      sListaColumna.Add('000');
+      sListaColumna.Add('0');
+    end;
+    if sListaColumna.Count = 10 then
+    begin
+      ShowMessage(sListaColumna[9]);
+    end; }
+    //----------------------------------------------------------------
       if TryStrToInt(sListaColumna[0], inumero) = False then
       begin
         sListaErrores.Add('Error: No es un valor numérico, Celda: ' +
@@ -200,6 +212,12 @@ begin
           sListaColumna[6] + ' /Columna: COMNNITDET' + sLineBreak);
         ivalidador := ivalidador + 1;
       end;
+      if TryStrToInt(sListaColumna[7], inumero) = False then
+      begin
+        sListaErrores.Add('Error: No es un valor numérico, Celda: ' +
+          sListaColumna[7] + ' /Columna: COMVALRET' + sLineBreak);
+        ivalidador := ivalidador + 1;
+      end;
       // Validamos que COMCONDET tenga maximo 80 carácteres y solo texto
       if Length(sListaColumna[8]) > 80 then
       begin
@@ -228,36 +246,51 @@ begin
       if ivalidador = 0 then
       begin
         // Insertamos los datos en la base de datos de detalle
-        qrysecundario.Close;
-        qrysecundario.SQL.Clear;
-        qrysecundario.SQL.Add('INSERT INTO ');
-        qrysecundario.SQL.Add('COMPROBANTE_DETALLE');
-        qrysecundario.SQL.Add
-          ('(COMNUM,TIPCOMID,COMCONS,PLACUECOD,COMTIPOMOV,COMVAL,COMNITDET,COMVALRET,COMCONDET,CENCOSID,COMDOCSOP)');
-        qrysecundario.SQL.Add('VALUES');
-        qrysecundario.SQL.Add
-          ('(:COMNUM, :TIPCOMID, :COMCONS, :PLACUECOD, :COMTIPOMOV, :COMVAL, :COMNITDET, :COMVALRET, :COMCONDET, :CENCOSID, :COMDOCSOP)');
-        qrysecundario.ParamByName('COMNUM').AsString := sListaColumna[0];
-        qrysecundario.ParamByName('TIPCOMID').AsString := sListaColumna[1];
-        qrysecundario.ParamByName('COMCONS').AsString := sListaColumna[2];
-        qrysecundario.ParamByName('PLACUECOD').AsString := sListaColumna[3];
-        qrysecundario.ParamByName('COMTIPOMOV').AsString := sListaColumna[4];
-        qrysecundario.ParamByName('COMVAL').AsString := sListaColumna[5];
-        qrysecundario.ParamByName('COMNITDET').AsString := sListaColumna[6];
-        qrysecundario.ParamByName('COMVALRET').AsString := sListaColumna[7];
-        qrysecundario.ParamByName('COMCONDET').AsString := sListaColumna[8];
-        qrysecundario.ParamByName('CENCOSID').AsString := sListaColumna[9];
-        qrysecundario.ParamByName('COMDOCSOP').AsString := sListaColumna[10];
-        qrysecundario.ExecSQL;
-        sListaCodDetalles.Add(sListaColumna[0]);
+        try
+          qrysecundario.Close;
+          qrysecundario.SQL.Clear;
+          qrysecundario.SQL.Add('INSERT INTO ');
+          qrysecundario.SQL.Add('COMPROBANTE_DETALLE');
+          qrysecundario.SQL.Add
+            ('(COMNUM,TIPCOMID,COMCONS,PLACUECOD,COMTIPOMOV,COMVAL,COMNITDET,COMVALRET,COMCONDET,CENCOSID,COMDOCSOP)');
+          qrysecundario.SQL.Add('VALUES');
+          qrysecundario.SQL.Add
+            ('(:COMNUM, :TIPCOMID, :COMCONS, :PLACUECOD, :COMTIPOMOV, :COMVAL, :COMNITDET, :COMVALRET, :COMCONDET, :CENCOSID, :COMDOCSOP)');
+          qrysecundario.ParamByName('COMNUM').AsString := sListaColumna[0];
+          qrysecundario.ParamByName('TIPCOMID').AsString := sListaColumna[1];
+          qrysecundario.ParamByName('COMCONS').AsString := sListaColumna[2];
+          qrysecundario.ParamByName('PLACUECOD').AsString := sListaColumna[3];
+          qrysecundario.ParamByName('COMTIPOMOV').AsString := sListaColumna[4];
+          qrysecundario.ParamByName('COMVAL').AsString := sListaColumna[5];
+          qrysecundario.ParamByName('COMNITDET').AsString := sListaColumna[6];
+          qrysecundario.ParamByName('COMVALRET').AsString := sListaColumna[7];
+          qrysecundario.ParamByName('COMCONDET').AsString := sListaColumna[8];
+          qrysecundario.ParamByName('CENCOSID').AsString := sListaColumna[9];
+          qrysecundario.ParamByName('COMDOCSOP').AsString := sListaColumna[10];
+          qrysecundario.ExecSQL;
+          sListaCodDetalles.Add(sListaColumna[0]);
+        Except
+          On { Error: UNIQUE } Exception do
+          begin
+            Application.MessageBox
+              ('Recuerde que la combinación del número de comprobante y el número consecutivo deben ser únicas, no se deben repetir.',
+              'Error', MB_OK + MB_ICONERROR);
+              ivalidador := ivalidador + 1;
+
+
+         sListaErrores.Add
+          ('Error: Columna COMCONS el numero consecutivo se repite');
+          end;
+        end;
       end;
-    end;
+    //end;
   end
   else
   begin
     sListaErrores.Add('Error: Cada fila debe tener 11 celdas /Fila:' +
       IntToStr(I + 1) + '' + sLineBreak);
     ivalidador := ivalidador + 1;
+
   end;
 end;
 
@@ -267,11 +300,12 @@ procedure validarEncabezadoCSV(sListaEncabezado, sListaColumna,
 var
   J, inumero: Integer;
   dfecha: TDateTime;
+  ifecha, idelimitador: Integer;
 
 begin
   if sListaColumna.Count = 8 then
   begin
-    if I = 0 then
+    {if I = 0 then
     begin
       sListaColumna.Text := UpperCase(sListaColumna.Text);
       if (sListaColumna[0] <> 'COMNUM') or (sListaColumna[1] <> 'COMFEC') or
@@ -284,10 +318,10 @@ begin
           sLineBreak);
         ivalidador := ivalidador + 1;
       end;
-    end
+    end  }
     // Validamos el contenido de cada columna del archivo
-    else
-    begin
+    //else
+    //begin
       // ShowMessage(sListaColumna.Text);
       // Validamos si COMNUM es de tipo numérico
       if TryStrToInt(sListaColumna[0], inumero) = False then
@@ -303,6 +337,18 @@ begin
           ('Error: El formato de fecha debe ser válido dd/mm/yyyy, Celda: ' +
           sListaColumna[1] + ' /Columna: COMFEC' + sLineBreak);
         ivalidador := ivalidador + 1;
+      end
+      else
+      begin
+        idelimitador := LastDelimiter('/', sListaColumna[1]);
+        ifecha := Length(sListaColumna[1]);
+        if (ifecha - idelimitador) <> 4 then
+        begin
+          sListaErrores.Add
+            ('Error: El formato de fecha debe ser válido dd/mm/yyyy, Celda: ' +
+            sListaColumna[1] + ' /Columna: COMFEC' + sLineBreak);
+          ivalidador := ivalidador + 1;
+        end;
       end;
 
       // Validamos que COMCON tenga máximo 80 carácteres y solo texto
@@ -330,7 +376,7 @@ begin
         begin
           if (Length(sListaColumna[4]) <> 2) then
           begin
-           sListaColumna[4] := sListaColumna[4].PadLeft(2,'0');
+            sListaColumna[4] := sListaColumna[4].PadLeft(2, '0');
           end;
         end
         else
@@ -412,7 +458,7 @@ begin
           sListaCodEncabezado.Add(sListaColumna[0]);
         end;
       end;
-    end;
+    //end;
   end
   else
   begin
@@ -421,7 +467,6 @@ begin
     ivalidador := ivalidador + 1;
   end;
 end;
-
 
 procedure TfmPrincipal.edtContraseñaChange(Sender: TObject);
 begin
@@ -479,19 +524,19 @@ end;
 procedure TfmPrincipal.sbtnAyudaClick(Sender: TObject);
 begin
   Application.MessageBox('Archivo Encabezado:' + sLineBreak +
-    '1. COMNUM : Numérico' + sLineBreak + '2. COMFEC : Formato fecha DD/MM/YYYY'
-    + sLineBreak + '3. COMCON : Texto máximo de 80 carácteres' + sLineBreak +
-    '4. COMPERAGNO : Año, ejemplo: 2022' + sLineBreak +
-    '5. COMPERMES : Mes, ejemplo: 03' + sLineBreak + '6. COMULTCOS : Numérico' +
-    sLineBreak + '7. COMANU : 1 o 0' + sLineBreak + '8. TIPCOMID : 3 LETRAS' +
+    'COLUMNA A: Numérico' + sLineBreak + 'COLUMNA B: Formato fecha DD/MM/YYYY'
+    + sLineBreak + 'COLUMNA C: Texto máximo de 80 carácteres' + sLineBreak +
+    'COLUMNA D: Año, ejemplo: 2022' + sLineBreak +
+    'COLUMNA E: Mes, ejemplo: 3' + sLineBreak + 'COLUMNA F: Numérico' +
+    sLineBreak + 'COLUMNA G: 1 o 0' + sLineBreak + 'COLUMNA H: 3 LETRAS' +
     sLineBreak + '' + sLineBreak + 'Archivo Detalle:' + sLineBreak +
-    '1. COMNUM : Tipo Numérico Entero' + sLineBreak + '2. TIPCOMID : 3 LETRAS' +
-    sLineBreak + '3. COMCONS : Numérico' + sLineBreak +
-    '4. PLACUECOD : Numérico' + sLineBreak + '5. COMTIPOMOV : D o C' +
-    sLineBreak + '6. COMVAL : Numérico' + sLineBreak + '7. COMNITDET : Numérico'
-    + sLineBreak + '8. COMVALRET : Numérico' + sLineBreak +
-    '9. COMCONDET : Texto máximo de 80 carácteres' + sLineBreak +
-    '10. CENCOSID : Numérico' + sLineBreak + '11. COMDOCSOP : Numérico',
+    'COLUMNA A: Tipo Numérico Entero' + sLineBreak + 'COLUMNA B: 3 LETRAS' +
+    sLineBreak + 'COLUMNA C: Numérico' + sLineBreak +
+    'COLUMNA D: Numérico' + sLineBreak + 'COLUMNA E: D o C' +
+    sLineBreak + 'COLUMNA F: Numérico' + sLineBreak + 'COLUMNA G: Numérico'
+    + sLineBreak + 'COLUMNA H: Numérico' + sLineBreak +
+    'COLUMNA I: Texto máximo de 80 carácteres' + sLineBreak +
+    'COLUMNA J: Numérico' + sLineBreak + 'COLUMNA K: Numérico',
     'Ayuda', MB_OK + MB_ICONQUESTION);
 end;
 
@@ -625,10 +670,10 @@ begin
       sldatosDet.Free;
     end;
     qrycargue := TFDQuery.Create(nil);
-    qrycargue.Connection := udbModulo.dbModulo.fdConexion;;
+    qrycargue.Connection := udbModulo.dbModulo.fdConexion;
     qrycargue.SQL.Clear;
     qrycargue.Close;
-    qrycargue.SQL.Add('INSERT INTO');
+    qrycargue.SQL.Add('INSERT OR REPLACE INTO');
     qrycargue.SQL.Add('LOG_CARGUE');
     qrycargue.SQL.Add('(COMNUM, FECHA)');
     qrycargue.SQL.Add('SELECT');
@@ -638,7 +683,7 @@ begin
 
     qrycargue.SQL.Clear;
     qrycargue.Close;
-    qrycargue.SQL.Add('INSERT INTO');
+    qrycargue.SQL.Add('INSERT OR REPLACE INTO');
     qrycargue.SQL.Add
       ('LOG_ENCABEZADO (CODIGOLOG,COMNUM,COMFEC,COMCON,COMPERAGNO,COMPERMES,COMULTCOS,COMANU,TIPCOMID)');
     qrycargue.SQL.Add('SELECT');
@@ -652,7 +697,7 @@ begin
 
     qrycargue.SQL.Clear;
     qrycargue.Close;
-    qrycargue.SQL.Add('INSERT INTO');
+    qrycargue.SQL.Add('INSERT OR REPLACE INTO');
     qrycargue.SQL.Add
       ('LOG_DETALLE (CODIGOLOG,COMNUM,COMCONS,TIPCOMID,PLACUECOD,COMTIPOMOV,COMVAL,COMNITDET,COMVALRET,COMCONDET,CENCOSID,COMDOCSOP)');
     qrycargue.SQL.Add('SELECT');
@@ -670,6 +715,7 @@ begin
 
     Application.MessageBox('Se han procesado los datos', 'Información',
       MB_OK + MB_ICONINFORMATION);
+      sbtnCargarService.Enabled := False;
     pbProgreso.Position := 0;
   end;
 
@@ -691,7 +737,7 @@ begin
     sListaColumna := TStringList.Create;
     sListaErrores := TStringList.Create;
     qrysecundario := TFDQuery.Create(nil);
-    qrysecundario.Connection := udbModulo.dbModulo.fdConexion;;
+    qrysecundario.Connection := udbModulo.dbModulo.fdConexion;
     sListaEncabezado.Clear;
     sListaColumna.Clear;
     sListaErrores.Clear;
@@ -699,7 +745,7 @@ begin
     qrysecundario.SQL.Add('DELETE FROM COMPROBANTE_DETALLE');
     qrysecundario.ExecSQL;
     sNombreArchivo := odCargarDetalles.FileName;
-    sListaEncabezado.LoadFromFile(sNombreArchivo, TEncoding.UTF8);
+    sListaEncabezado.LoadFromFile(sNombreArchivo);
     ivalidador := 0;
     sListaCodDetalles.Clear;
     // Limpiamos el memo de errores
@@ -767,7 +813,7 @@ end;
 
 procedure TfmPrincipal.sbtnEncabezadoClick(Sender: TObject);
 var
-  qryprincipal: TFDQuery;
+  qryprincipal, qryconsulta: TFDQuery;
   odCargarEncabezado: TOpenDialog;
   sListaEncabezado, sListaColumna, sListaErrores: TStringList;
   sNombreArchivo: String;
@@ -778,7 +824,7 @@ begin
   if odCargarEncabezado.Execute then
   begin
     qryprincipal := TFDQuery.Create(nil);
-    qryprincipal.Connection := udbModulo.dbModulo.fdConexion;;
+    qryprincipal.Connection := udbModulo.dbModulo.fdConexion;
     sListaEncabezado := TStringList.Create;
     sListaColumna := TStringList.Create;
     sListaErrores := TStringList.Create;
@@ -790,7 +836,7 @@ begin
     qryprincipal.ExecSQL;
     sNombreArchivo := odCargarEncabezado.FileName;
     // Se carga la ruta del archivo
-    sListaEncabezado.LoadFromFile(sNombreArchivo, TEncoding.UTF8);
+    sListaEncabezado.LoadFromFile(sNombreArchivo);
     // Se carga el archivo csv a la Lista
     // Recorremos la lista completo para hacer las validaciones, extraemos cada fila del archivo en sListaColumna mediante su posición
     ivalidador := 0;
@@ -814,6 +860,15 @@ begin
       sbtnCargarService.Enabled := False;
       Application.MessageBox('Se ha importado el archivo correctamente',
         'Información', MB_OK + MB_ICONINFORMATION);
+        qryconsulta := TFDQuery.Create(nil);
+      qryconsulta.Connection := udbModulo.dbModulo.fdConexion;
+      qryconsulta.Close;
+      qryconsulta.SQL.Add('SELECT LG.COMNUM FROM LOG_CARGUE LG, COMPROBANTE_ENCABEZADO CE WHERE LG.COMNUM = CE.COMNUM ;');
+      qryconsulta.Open;
+      if not qryconsulta.IsEmpty then
+      Application.MessageBox(Pchar('El número de registro ' +qryconsulta.FieldByName('COMNUM').AsString+ ' ya se encuentra  en la base de datos y será reemplazado.'), 'Información',
+        MB_OK + MB_ICONINFORMATION);
+      qryconsulta.Free;
       sListaCodEncabezado.Sort;
       sListaCodDetalles.Sort;
 
@@ -823,6 +878,7 @@ begin
       mErrores.Lines.Add(sListaErrores.Text);
       Application.MessageBox('Error al cargar el archivo', 'Error',
         MB_OK + MB_ICONINFORMATION);
+        sbtnDetalles.Enabled := False;
       qrEncabezado.Close;
       qrEncabezado.Open;
     end;
